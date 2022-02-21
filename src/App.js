@@ -3,6 +3,9 @@ import './styles/App.css';
 import twitterLogo from './assets/twitter-logo.svg';
 import { ethers } from 'ethers';
 import abi from './abis/Domains.json'
+import polygonLogo from './assets/polygonlogo.png';
+import ethLogo from './assets/ethlogo.png';
+import { networks } from './utils/networks.js'
 
 // Constants
 const TWITTER_HANDLE = 'Shivansh0810';
@@ -15,6 +18,7 @@ const App = () => {
 
 	const [currentAccount, setCurrentAccount] = useState('');
 	const [disableMint, setDisableMint] = useState("");
+	const [network, setNetwork] = useState("");
 	const domainRef = useRef();
 	const recordRef = useRef();
 
@@ -51,6 +55,16 @@ const App = () => {
 		} else {
 			console.log("Could not find authorized account.");
 		}
+
+		const chainId = await ethereum.request({method: "eth_chainId"});
+		setNetwork(networks[chainId]);
+
+		ethereum.on("chainChanged", handleChainChanged);
+
+		function handleChainChanged(_chain){
+			setNetwork(networks[chainId]);
+			window.location.reload();
+		}
 	};
 
 	const mintDomain = async () => {
@@ -75,7 +89,7 @@ const App = () => {
 			const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 		
 			console.log("Going to pop wallet now to pay gas...")
-		
+			setDisableMint(true);
 		  	let tx = await contract.register(domain, {value: ethers.utils.parseEther('0.03')});
 		  // Wait for the transaction to be mined
 		   	const receipt = await tx.wait();
@@ -96,11 +110,52 @@ const App = () => {
 			else {
 				alert("Transaction failed! Please try again");
 			}
+			setDisableMint(false);
 		}
 	  }
 	  catch(error){
 		console.log(error);
+		setDisableMint(false);
 	  }
+	}
+
+	const switchNetwork = async () => {
+		if(window.ethereum) {
+			const {ethereum} = window;
+			try {
+				await ethereum.request({
+					method: 'wallet_switchEthereumChain',
+					params: [{ chainId: '0x13881' }],
+				});
+			} catch (err) {
+
+				if (err.code === 4902) {
+					try {
+						await ethereum.request({
+							method: 'wallet_addEthereumChain',
+							params: [
+								{	
+									chainId: '0x13881',
+									chainName: 'Polygon Mumbai Testnet',
+									rpcUrls: ['https://rpc-mumbai.maticvigil.com/'],
+									nativeCurrency: {
+											name: "Mumbai Matic",
+											symbol: "MATIC",
+											decimals: 18
+									},
+									blockExplorerUrls: ["https://mumbai.polygonscan.com/"]
+								},
+							],
+						});
+					} catch(e) {
+						console.log(e);
+					}
+				}
+				console.log(err);
+			}
+		} else {
+			alert('MetaMask is not installed. Please install it to use this app -> https://metamask.io/download.html');
+		}
 	}
 
 	const renderNotConnectedContainer = () => (
@@ -113,6 +168,16 @@ const App = () => {
   	);
 
 	const renderInputForms = () => {
+
+		if (network !== 'Polygon Mumbai Testnet') {
+			return (
+				<div className="connect-wallet-container">
+					<p>Please connect to the Polygon Mumbai Testnet</p>
+					<button className='cta-button mint-button' onClick={switchNetwork}>Click here to switch</button>
+				</div>
+			);
+		}
+
 		return (
 			<div className='form-container'>
 				<div className='first-row'>
@@ -151,6 +216,10 @@ const App = () => {
 							<div className="left">
 							<p className="title">🐯 EXE Name Service</p>
 							<p className="subtitle">This .exe will never stop responding!</p>
+							</div>
+							<div className='right'>
+								<img alt="Network logo" className='logo' src = { network.includes("Polygon")? polygonLogo : ethLogo } />
+								{currentAccount?<p>Wallet: {currentAccount.slice(0,6)}...{currentAccount.slice(-4)}</p>:<p>Not connected</p>}
 							</div>
 						</header>
 					</div>
