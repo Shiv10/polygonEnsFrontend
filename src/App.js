@@ -204,6 +204,20 @@ const App = () => {
 		)
 	}
 
+	const openSea = async () => {
+		window.open(`https://testnets.opensea.io/${currentAccount}`, "_blank");
+	}
+
+	function renderOpenSea() {
+		return (
+			<div className='button-contianer'>
+				<button className='cta-button sea-button' onClick={openSea}>
+					See my domains on OpenSea
+				</button>
+			</div>
+		);
+	}
+
 	useEffect(() => {
 		checkWalletConnected();
 	}, []);
@@ -225,6 +239,8 @@ const App = () => {
 					</div>
 					{!currentAccount && renderNotConnectedContainer()}
 					{currentAccount && renderInputForms()}
+					{currentAccount && renderOpenSea()}
+					
 					<div className="footer-container">
 						<img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
 							<a

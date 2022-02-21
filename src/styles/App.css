@@ -104,12 +104,22 @@ header{
 }
 
 .mint-button {
-  background: -webkit-linear-gradient(left, #ec993a, #e9252f);
+  background: -webkit-linear-gradient(left, #ebd457, #f351d8);
   font-size: 18px;
   background-size: 200% 200%;
   animation: gradient-animation 4s ease infinite;
   margin: 20px 10px;
-  border-radius: 10px;
+  border-radius: 20px;
+  padding: 0px 2rem;
+}
+
+.sea-button {
+  background: -webkit-linear-gradient(left, #49e6cb, #3e85f0);
+  font-size: 18px;
+  background-size: 200% 200%;
+  animation: gradient-animation 4s ease infinite;
+  margin: 20px 10px;
+  border-radius: 20px;
   padding: 0px 2rem;
 }
 
