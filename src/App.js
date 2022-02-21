@@ -173,9 +173,9 @@ const App = () => {
 			if (ethereum) {
 				
 				const provider = new ethers.providers.Web3Provider(ethereum);
-				const signer = new provider.getSigner();
+				const signer = provider.getSigner();
 				const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
+				console.log("Setting new record!");
 				let tx = await contract.setRecord(domain, record);
 				await tx.wait();
 				console.log("Record set https://mumbai.polygonscan.com/tx/"+tx.hash);
@@ -276,7 +276,7 @@ const App = () => {
 							<button className='cta-button mint-button' disabled={disableRecord} onClick={updateRecords}>
 								Set Record
 							</button>
-							<button className='cta-button mint-button' onClick={()=>{ setEditing(false); domainRef.current.value=""; }}>
+							<button className='cta-button mint-button' onClick={()=>{ setEditing(false); domainRef.current.value=""; recordRef.current.value="";}}>
 								Cancel
 							</button>
 						</div>	
