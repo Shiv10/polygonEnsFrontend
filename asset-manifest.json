@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/polygonEnsFrontend/static/css/main.38adec8b.css",
+    "main.js": "/polygonEnsFrontend/static/js/main.3f9d9aa2.js",
+    "static/media/twitter-logo.svg": "/polygonEnsFrontend/static/media/twitter-logo.ab177c7931af382e900d582694440d6a.svg",
+    "static/media/polygonlogo.png": "/polygonEnsFrontend/static/media/polygonlogo.6cde40a9b9119621eb2b.png",
+    "index.html": "/polygonEnsFrontend/index.html",
+    "main.38adec8b.css.map": "/polygonEnsFrontend/static/css/main.38adec8b.css.map",
+    "main.3f9d9aa2.js.map": "/polygonEnsFrontend/static/js/main.3f9d9aa2.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.38adec8b.css",
+    "static/js/main.3f9d9aa2.js"
+  ]
+}
