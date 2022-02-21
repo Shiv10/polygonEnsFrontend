@@ -190,6 +190,7 @@ const App = () => {
 			console.log(e);
 		}
 		setDisableRecord(false);
+		setEditing(false);
 	}
 
 
