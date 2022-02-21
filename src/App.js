@@ -11,14 +11,17 @@ import { networks } from './utils/networks.js'
 const TWITTER_HANDLE = 'Shivansh0810';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const tld = ".exe";
-const CONTRACT_ADDRESS = '0xDec18EbA48108a85363606348eab954A4F4Fef31';
+const CONTRACT_ADDRESS = '0xC7804802c9Ceccfe1bab893A72621366093d3Cf4';
 const CONTRACT_ABI=abi.abi;
 
 const App = () => {
 
 	const [currentAccount, setCurrentAccount] = useState('');
-	const [disableMint, setDisableMint] = useState("");
+	const [disableMint, setDisableMint] = useState(false);
+	const [disableRecord, setDisableRecord] = useState(false);
+	const [editing, setEditing] = useState(false);
 	const [network, setNetwork] = useState("");
+	const [mints, setMints] = useState([]);
 	const domainRef = useRef();
 	const recordRef = useRef();
 
@@ -71,7 +74,8 @@ const App = () => {
 		// Don't run if the domain is empty
 		const domain = domainRef.current.value;
 		const record = recordRef.current.value;
-		if (!domain) { return }
+		setEditing(true);
+		if (!domain || !record) { return }
 		// Alert the user if the domain is too short
 		if (domain.length < 3) {
 			alert('Domain must be at least 3 characters long');
@@ -90,7 +94,7 @@ const App = () => {
 		
 			console.log("Going to pop wallet now to pay gas...")
 			setDisableMint(true);
-		  	let tx = await contract.register(domain, {value: ethers.utils.parseEther('0.03')});
+		  	let tx = await contract.register(domain, {value: ethers.utils.parseEther(price)});
 		  // Wait for the transaction to be mined
 		   	const receipt = await tx.wait();
 	
@@ -103,9 +107,14 @@ const App = () => {
 				await tx.wait();
 
 				console.log("Record set! https://mumbai.polygonscan.com/tx/"+tx.hash);
+
+				setTimeout(() => {
+					fetchMints();
+				}, 2000);
 				
 				domainRef.current.value = "";
 				recordRef.current.value = "";
+				alert("Domain minted!");
 			}
 			else {
 				alert("Transaction failed! Please try again");
@@ -118,6 +127,72 @@ const App = () => {
 		setDisableMint(false);
 	  }
 	}
+
+	const fetchMints = async () => {
+		try {
+			const { ethereum } = window;
+			if (ethereum) {
+				
+				const provider = new ethers.providers.Web3Provider(ethereum);
+				const signer = provider.getSigner();
+				const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+				const names = await contract.getAllNames();
+
+				const mintRecords = await Promise.all(names.map(async (name) => {
+					const mintRecord = await contract.getRecord(name);
+					const owner = await contract.getAddress(name);
+					
+					return {
+						id: names.indexOf(name),
+						name: name,
+						record: mintRecord,
+						owner: owner
+					};
+				}));
+
+				console.log("records fetched: ", mintRecords);
+				setMints(mintRecords);
+				
+			} else {
+				alert('MetaMask is not installed. Please install it to use this app -> https://metamask.io/download.html')
+			}
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	const updateRecords = async () => {
+		const domain = domainRef.current.value;
+		const record = recordRef.current.value;
+		if(domain=="" || record == "") return;
+		setDisableRecord(true);
+		console.log("Updating record for domain: ", domain);
+		try {
+			const { ethereum } = window;
+			if (ethereum) {
+				
+				const provider = new ethers.providers.Web3Provider(ethereum);
+				const signer = new provider.getSigner();
+				const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+				let tx = await contract.setRecord(domain, record);
+				await tx.wait();
+				console.log("Record set https://mumbai.polygonscan.com/tx/"+tx.hash);
+				fetchMints();
+				domainRef.current.value = "";
+				recordRef.current.value = "";
+				
+			} else {
+				alert('MetaMask is not installed. Please install it to use this app -> https://metamask.io/download.html')
+			}
+		} catch (e) {
+			console.log(e);
+		}
+		setDisableRecord(false);
+	}
+
+
 
 	const switchNetwork = async () => {
 		if(window.ethereum) {
@@ -196,9 +271,22 @@ const App = () => {
 				/>
 
 				<div className="button-container">
-					<button className='cta-button mint-button' disabled={disableMint} onClick={mintDomain}>
-						Mint
-					</button> 
+					{editing? (
+						<div className='button-container'>
+							<button className='cta-button mint-button' disabled={disableRecord} onClick={updateRecords}>
+								Set Record
+							</button>
+							<button className='cta-button mint-button' onClick={()=>{ setEditing(false); domainRef.current.value=""; }}>
+								Cancel
+							</button>
+						</div>	
+						): (
+						<button className='cta-button mint-button' disabled={disableMint} onClick={mintDomain}>
+							Mint
+						</button>
+						)
+					}
+					 
 				</div>
 			</div>
 		)
@@ -218,8 +306,45 @@ const App = () => {
 		);
 	}
 
+	const renderMints = () => {
+		console.log("rendering mints");
+		if (currentAccount && mints.length > 0) {
+			return (
+				<div className="mint-container">
+					<p className="subtitle"> Recently minted domains!</p>
+					<div className="mint-list">
+						{ mints.map((mint, index) => {
+							return (
+								<div className="mint-item" key={index}>
+									<div className='mint-row'>
+										<a className="link" href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${mint.id}`} target="_blank" rel="noopener noreferrer">
+											<p className="underlined">{' '}{mint.name}{tld}{' '}</p>
+										</a>
+										{/* If mint.owner is currentAccount, add an "edit" button*/}
+										{ mint.owner.toLowerCase() === currentAccount.toLowerCase() ?
+											<button className="edit-button" onClick={() => editRecord(mint.name)}>
+												<img className="edit-icon" src="https://img.icons8.com/metro/26/000000/pencil.png" alt="Edit button" />
+											</button>
+											:
+											null
+										}
+									</div>
+						<p> {mint.record} </p>
+					</div>)
+					})}
+				</div>
+			</div>);
+		}
+	};
+
+	const editRecord = (name) => {
+		setEditing(true);
+		domainRef.current.value = name;
+	}
+
 	useEffect(() => {
 		checkWalletConnected();
+		fetchMints();
 	}, []);
 
 	return (
@@ -240,6 +365,8 @@ const App = () => {
 					{!currentAccount && renderNotConnectedContainer()}
 					{currentAccount && renderInputForms()}
 					{currentAccount && renderOpenSea()}
+					{mints && renderMints()}
+					
 					
 					<div className="footer-container">
 						<img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
@@ -248,7 +375,7 @@ const App = () => {
 								href={TWITTER_LINK}
 								target="_blank"
 								rel="noreferrer"
-							>{`built with @${TWITTER_HANDLE}`}</a>
+							>{`built by @${TWITTER_HANDLE}`}</a>
 					</div>
 				</div>
 			</div>
